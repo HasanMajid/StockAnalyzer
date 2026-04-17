@@ -1,4 +1,4 @@
-import { Target, TrendingUp, Activity, Newspaper } from 'lucide-react';
+import { Target, TrendingUp, Activity, Newspaper, Brain } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import './index.css';
 import Chart from './components/Chart';
@@ -13,7 +13,6 @@ function App() {
       .then(json => setSignal(json))
       .catch(err => console.error("Could not load signals", err));
       
-    // Set up a polling interval every 2 minutes for day trading
     const interval = setInterval(() => {
       fetch('http://localhost:8000/api/signal/CJ.TO')
         .then(res => res.json())
@@ -29,7 +28,16 @@ function App() {
         <div className="brand">
           <Target color="#3b82f6" size={28} />
           <h1>Nexus Trader</h1>
-          <span className="ticker-badge">TSX:CJ</span>
+          <span className="ticker-badge" style={{marginRight: '12px'}}>TSX:CJ</span>
+          
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', borderLeft: '1px solid var(--border-color)', paddingLeft: '20px' }}>
+            <span style={{ fontSize: '2.25rem', fontWeight: 700, letterSpacing: '-1px', lineHeight: 1 }}>
+              ${signal?.math?.current_price?.toFixed(2) || '...'}
+            </span>
+            <span className={signal?.math?.change_pct >= 0 ? 'value-green' : 'value-red'} style={{ fontSize: '1.1rem', fontWeight: 600 }}>
+              {signal?.math?.change_pct >= 0 ? '+' : ''}{signal?.math?.change_pct?.toFixed(2) || '0.00'}%
+            </span>
+          </div>
         </div>
         
         <div style={{ display: 'flex', gap: '12px' }}>
@@ -43,37 +51,47 @@ function App() {
       <main className="main-chart-area">
         <div className="stats-grid">
           <div className="stat-card">
-            <div className="stat-title"><TrendingUp size={16}/> Current Price</div>
-            <div className={`stat-value ${signal?.math.change_pct >= 0 ? 'value-green' : 'value-red'}`}>
-              ${signal?.math.current_price?.toFixed(2) || '0.00'}
-            </div>
-            <div style={{fontSize: '0.8rem', color: signal?.math.change_pct >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'}}>
-              {signal?.math.change_pct >= 0 ? '+' : ''}{signal?.math.change_pct?.toFixed(2)}% Today
+            <div className="stat-title"><TrendingUp size={16}/> Math Score</div>
+            <div className="stat-value">{signal?.math.score || '...'}</div>
+            <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>
+               {signal?.math.volatility || 'Scanning'} Volatility
             </div>
           </div>
           <div className="stat-card">
-            <div className="stat-title"><Activity size={16}/> Volatility</div>
-            <div className="stat-value">{signal?.math.volatility || 'Scanning'}</div>
-            <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>Math Score: {signal?.math.score}/100</div>
+            <div className="stat-title"><Newspaper size={16}/> VADER Sentiment</div>
+            <div className={`stat-value ${signal?.news?.vader_score > 50 ? 'value-green' : (signal?.news?.vader_score < 50 ? 'value-red' : '')}`}>
+              {signal?.news.vader_score || '50'}
+            </div>
+            <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>Rule-based Engine</div>
           </div>
           <div className="stat-card">
-            <div className="stat-title"><Newspaper size={16}/> Sentiment</div>
-            <div className={`stat-value ${signal?.news?.aggregate_score > 50 ? 'value-green' : (signal?.news?.aggregate_score < 50 ? 'value-red' : '')}`}>
-              {signal?.news.aggregate_score || '50'} / 100
+            <div className="stat-title"><Brain size={16}/> Gemini LLM Score</div>
+            <div className={`stat-value ${typeof signal?.news?.ai_score === 'number' && signal?.news?.ai_score > 50 ? 'value-green' : (typeof signal?.news?.ai_score === 'number' && signal?.news?.ai_score < 50 ? 'value-red' : '')}`} style={typeof signal?.news?.ai_score === 'string' ? {fontSize: '1rem', color: '#f59e0b'} : {}}>
+              {signal?.news?.ai_score || '...'}
             </div>
             <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>
-              {signal?.news?.aggregate_score > 50 ? 'Bullish' : (signal?.news?.aggregate_score < 50 ? 'Bearish' : 'Neutral')} News
+              AI Contextual Analysis
             </div>
           </div>
           <div className="stat-card conviction-score">
             <div className="stat-title">Conviction Signal</div>
             <div className="stat-value">{signal?.conviction?.signal || 'SCANNING...'}</div>
-            <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>AI Score: {signal?.conviction?.score.toFixed(1) || '0'}/100</div>
+            <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>Score: {signal?.conviction?.score.toFixed(1) || '0'}/100</div>
           </div>
         </div>
+        
+        {signal?.news?.ai_reasoning && (
+          <div style={{ width: '100%', padding: '16px', background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.2)', borderRadius: '12px', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+            <Brain size={20} color="#3b82f6" style={{ flexShrink: 0, marginTop: '2px' }} />
+            <div>
+              <span style={{ fontWeight: 600, color: '#60a5fa', marginRight: '8px' }}>Active AI Thesis:</span>
+              <span style={{ color: 'var(--text-primary)', lineHeight: 1.5, fontSize: '0.95rem' }}>{signal.news.ai_reasoning}</span>
+            </div>
+          </div>
+        )}
 
         <div className="glass-panel chart-container" style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ marginBottom: '16px', fontWeight: 600, display: 'flex', justifyContent: 'space-between' }}>
+          <div style={{ marginBottom: '16px', fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span>Cardinal Energy Ltd. (15m Interval)</span>
           </div>
           <Chart />

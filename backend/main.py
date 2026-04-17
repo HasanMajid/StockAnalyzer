@@ -5,10 +5,9 @@ from engine.news_engine import fetch_and_score_news
 
 app = FastAPI(title="Nexus Trader API")
 
-# Allow Vite Frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # For purely local dev
+    allow_origins=["*"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -20,26 +19,27 @@ def ping():
 
 @app.get("/api/chart/{ticker}")
 def get_chart(ticker: str):
-    """Returns 15m OHLC data for the frontend chart"""
     data = get_historical_data(ticker)
     return {"ticker": ticker, "data": data}
 
 @app.get("/api/signal/{ticker}")
 def get_signal(ticker: str):
-    """
-    The Master endpoint. Runs the Math and News engines in real-time,
-    and returns a unified Conviction Score.
-    """
     # 1. Math Data
     math_data = analyze_technicals(ticker)
     math_score = math_data["score"]
     
     # 2. News Data
     news_data = fetch_and_score_news(ticker)
-    news_score = news_data["aggregate_score"]
+    vader_score = news_data["vader_score"]
+    ai_score = news_data["ai_score"]
     
-    # 3. Conviction Score (50% Math, 50% News)
-    conviction_value = (math_score + news_score) / 2
+    # 3. Conviction Score (Depends if AI is connected)
+    if isinstance(ai_score, int):
+        # 40% Math, 20% VADER, 40% AI
+        conviction_value = (math_score * 0.4) + (vader_score * 0.2) + (ai_score * 0.4)
+    else:
+        # 60% Math, 40% VADER (fallback when AI missing)
+        conviction_value = (math_score * 0.6) + (vader_score * 0.4)
     
     if conviction_value >= 65:
         conviction_signal = "STRONG BUY"
