@@ -6,21 +6,30 @@ import NewsPanel from './components/NewsPanel';
 
 function App() {
   const [signal, setSignal] = useState<any>(null);
+  const [ticker, setTicker] = useState('CJ.TO');
+  const [inputValue, setInputValue] = useState('CJ.TO');
 
   useEffect(() => {
-    fetch('http://localhost:8000/api/signal/CJ.TO')
+    // Clear old signal when switching tickers
+    setSignal(null);
+    fetch(`http://localhost:8000/api/signal/${ticker}`)
       .then(res => res.json())
       .then(json => setSignal(json))
       .catch(err => console.error("Could not load signals", err));
       
     const interval = setInterval(() => {
-      fetch('http://localhost:8000/api/signal/CJ.TO')
+      fetch(`http://localhost:8000/api/signal/${ticker}`)
         .then(res => res.json())
         .then(json => setSignal(json));
     }, 120000);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [ticker]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if(inputValue) setTicker(inputValue.toUpperCase());
+  };
 
   return (
     <div className="app-container">
@@ -28,7 +37,16 @@ function App() {
         <div className="brand">
           <Target color="#3b82f6" size={28} />
           <h1>Nexus Trader</h1>
-          <span className="ticker-badge" style={{marginRight: '12px'}}>TSX:CJ</span>
+          <form onSubmit={handleSearch} style={{ display: 'flex', marginLeft: '12px' }}>
+            <input 
+              type="text" 
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              className="ticker-badge"
+              style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.3)', outline: 'none', width: '100px', textAlign: 'center', fontFamily: 'inherit', fontSize: '0.9rem' }}
+            />
+            <button type="submit" style={{ display: 'none' }}>Go</button>
+          </form>
           
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', borderLeft: '1px solid var(--border-color)', paddingLeft: '20px' }}>
             <span style={{ fontSize: '2.25rem', fontWeight: 700, letterSpacing: '-1px', lineHeight: 1 }}>
@@ -92,9 +110,9 @@ function App() {
 
         <div className="glass-panel chart-container" style={{ display: 'flex', flexDirection: 'column' }}>
           <div style={{ marginBottom: '16px', fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>Cardinal Energy Ltd. (15m Interval)</span>
+            <span>{ticker} Interactive Chart (15m Interval)</span>
           </div>
-          <Chart />
+          <Chart ticker={ticker} />
         </div>
       </main>
 

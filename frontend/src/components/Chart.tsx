@@ -2,13 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { createChart, ColorType } from 'lightweight-charts';
 import { Loader2 } from 'lucide-react';
 
-export default function Chart() {
+export default function Chart({ ticker }: { ticker: string }) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:8000/api/chart/CJ.TO')
+    setLoading(true);
+    fetch(`http://localhost:8000/api/chart/${ticker}`)
       .then(res => res.json())
       .then(json => {
         if (json.data && json.data.length > 0) {
@@ -20,7 +21,7 @@ export default function Chart() {
         console.error("Failed to fetch chart data", err);
         setLoading(false);
       });
-  }, []);
+  }, [ticker]);
 
   useEffect(() => {
     if (!chartContainerRef.current || data.length === 0) return;
