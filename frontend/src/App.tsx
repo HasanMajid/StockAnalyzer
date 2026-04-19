@@ -121,7 +121,7 @@ function App() {
           <Newspaper size={20} color="var(--accent-blue)" />
           <h2 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Live Catalyst Feed</h2>
         </div>
-        <NewsPanel news={signal?.news?.articles || []} />
+        <NewsPanel news={signal?.news?.articles || []} isScanning={!signal} />
       </aside>
     </div>
   );

@@ -9,12 +9,20 @@ interface NewsItem {
   link: string;
 }
 
-export default function NewsPanel({ news }: { news: NewsItem[] }) {
-  if (!news || news.length === 0) {
+export default function NewsPanel({ news, isScanning }: { news: NewsItem[], isScanning: boolean }) {
+  if (isScanning) {
     return (
       <div className="news-list" style={{ justifyContent: 'center', alignItems: 'center', padding: '40px' }}>
         <Loader2 className="animate-spin text-gray-500" />
         <span style={{color: 'var(--text-secondary)', marginTop: '8px', fontSize: '14px'}}>Scanning catalyst feeds...</span>
+      </div>
+    );
+  }
+
+  if (!news || news.length === 0) {
+    return (
+      <div className="news-list" style={{ justifyContent: 'center', alignItems: 'center', padding: '40px', textAlign: 'center' }}>
+        <span style={{color: 'var(--text-secondary)', fontSize: '14px'}}>No recent news catalysts found for this ticker.</span>
       </div>
     );
   }
