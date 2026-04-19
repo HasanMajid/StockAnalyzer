@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from engine.math_engine import get_historical_data, analyze_technicals
-from engine.news_engine import fetch_and_score_news
+from engine.news_engine import fetch_and_score_news, client, GEMINI_KEY
+from typing import Optional
 
 app = FastAPI(title="Nexus Trader API")
 
@@ -22,14 +23,26 @@ def get_chart(ticker: str):
     data = get_historical_data(ticker)
     return {"ticker": ticker, "data": data}
 
+@app.get("/api/macro-drivers/{ticker}")
+def get_macro_drivers(ticker: str):
+    if not GEMINI_KEY:
+        return {"drivers": ""}
+        
+    prompt = f"Identify the top 3 macroeconomic or geopolitical drivers that currently affect the stock ticker {ticker}. Return ONLY a comma-separated list of 3 short phrases (e.g., 'WTI Crude Oil, OPEC policy, Geopolitics'). No other text or markdown."
+    try:
+         resp = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
+         return {"drivers": resp.text.strip()}
+    except Exception as e:
+         return {"drivers": ""}
+
 @app.get("/api/signal/{ticker}")
-def get_signal(ticker: str):
+def get_signal(ticker: str, macro: Optional[str] = None):
     # 1. Math Data
     math_data = analyze_technicals(ticker)
     math_score = math_data["score"]
     
     # 2. News Data
-    news_data = fetch_and_score_news(ticker)
+    news_data = fetch_and_score_news(ticker, macro)
     vader_score = news_data["vader_score"]
     ai_score = news_data["ai_score"]
     

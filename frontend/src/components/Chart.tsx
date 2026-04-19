@@ -9,18 +9,28 @@ export default function Chart({ ticker }: { ticker: string }) {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`http://localhost:8000/api/chart/${ticker}`)
-      .then(res => res.json())
-      .then(json => {
-        if (json.data && json.data.length > 0) {
-          setData(json.data);
-        }
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error("Failed to fetch chart data", err);
-        setLoading(false);
-      });
+    
+    const fetchChartData = () => {
+      fetch(`http://localhost:8000/api/chart/${ticker}`)
+        .then(res => res.json())
+        .then(json => {
+          if (json.data && json.data.length > 0) {
+            setData(json.data);
+          }
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error("Failed to fetch chart data", err);
+          setLoading(false);
+        });
+    };
+    
+    // Initial fetch
+    fetchChartData();
+    
+    // Poll every 60 seconds for live chart updates
+    const interval = setInterval(fetchChartData, 60000);
+    return () => clearInterval(interval);
   }, [ticker]);
 
   useEffect(() => {

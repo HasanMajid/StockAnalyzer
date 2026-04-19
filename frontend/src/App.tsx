@@ -8,27 +8,45 @@ function App() {
   const [signal, setSignal] = useState<any>(null);
   const [ticker, setTicker] = useState('CJ.TO');
   const [inputValue, setInputValue] = useState('CJ.TO');
+  const [macroInput, setMacroInput] = useState('');
+  const [activeMacro, setActiveMacro] = useState('');
+
+  // Fetch Macro Drivers when Ticker changes
+  useEffect(() => {
+    fetch(`http://localhost:8000/api/macro-drivers/${ticker}`)
+      .then(res => res.json())
+      .then(json => {
+         if(json.drivers) {
+             setMacroInput(json.drivers);
+             setActiveMacro(json.drivers);
+         }
+      })
+      .catch(err => console.error("Could not fetch macro drivers", err));
+  }, [ticker]);
 
   useEffect(() => {
-    // Clear old signal when switching tickers
+    // Clear old signal when switching tickers or macros
     setSignal(null);
-    fetch(`http://localhost:8000/api/signal/${ticker}`)
+    const macroParam = activeMacro ? `?macro=${encodeURIComponent(activeMacro)}` : '';
+    
+    fetch(`http://localhost:8000/api/signal/${ticker}${macroParam}`)
       .then(res => res.json())
       .then(json => setSignal(json))
       .catch(err => console.error("Could not load signals", err));
       
     const interval = setInterval(() => {
-      fetch(`http://localhost:8000/api/signal/${ticker}`)
+      fetch(`http://localhost:8000/api/signal/${ticker}${macroParam}`)
         .then(res => res.json())
         .then(json => setSignal(json));
-    }, 120000);
+    }, 60000);
     
     return () => clearInterval(interval);
-  }, [ticker]);
+  }, [ticker, activeMacro]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if(inputValue) setTicker(inputValue.toUpperCase());
+    setActiveMacro(macroInput);
   };
 
   return (
@@ -48,7 +66,20 @@ function App() {
             <button type="submit" style={{ display: 'none' }}>Go</button>
           </form>
           
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', borderLeft: '1px solid var(--border-color)', paddingLeft: '20px' }}>
+          <form onSubmit={handleSearch} style={{ display: 'flex', marginLeft: '12px', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.8rem', color: '#94a3b8', marginRight: '8px', fontWeight: 600 }}>MACRO RADAR:</span>
+            <input 
+              type="text" 
+              value={macroInput}
+              onChange={(e) => setMacroInput(e.target.value)}
+              className="ticker-badge"
+              placeholder="Auto-generating..."
+              style={{ background: 'transparent', color: '#94a3b8', border: '1px dashed rgba(148, 163, 184, 0.4)', outline: 'none', width: '220px', padding: '4px 8px', fontSize: '0.8rem', fontWeight: 500 }}
+            />
+            <button type="submit" style={{ display: 'none' }}>Update</button>
+          </form>
+          
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', borderLeft: '1px solid var(--border-color)', paddingLeft: '20px', marginLeft: '20px' }}>
             <span style={{ fontSize: '2.25rem', fontWeight: 700, letterSpacing: '-1px', lineHeight: 1 }}>
               ${signal?.math?.current_price?.toFixed(2) || '...'}
             </span>
