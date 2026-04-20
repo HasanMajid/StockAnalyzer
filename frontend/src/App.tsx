@@ -10,7 +10,7 @@ function App() {
   const [inputValue, setInputValue] = useState('CJ.TO');
   const [macroInput, setMacroInput] = useState('');
   const [activeMacro, setActiveMacro] = useState('');
-  const [tradingMode, setTradingMode] = useState<'swing' | 'day'>('swing');
+  const [tradingMode, setTradingMode] = useState<'swing' | 'day'>('day');
 
   // Fetch Macro Drivers when Ticker changes
   useEffect(() => {

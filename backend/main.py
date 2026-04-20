@@ -51,7 +51,7 @@ def get_macro_drivers(ticker: str):
          return {"drivers": ""}
 
 @app.get("/api/signal/{ticker}")
-def get_signal(ticker: str, macro: Optional[str] = None, trading_mode: Optional[str] = "swing"):
+def get_signal(ticker: str, macro: Optional[str] = None, trading_mode: Optional[str] = "day"):
     # 1. Math Data
     math_data = analyze_technicals(ticker)
     math_score = math_data["score"]
