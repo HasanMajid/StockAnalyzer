@@ -99,12 +99,17 @@ function App() {
 
       <main className="main-chart-area">
         <div className="stats-grid">
-          <div className="stat-card">
+          <div className="stat-card" style={signal?.math?.pattern && signal?.math?.pattern !== "None" ? { border: '1px solid rgba(245, 158, 11, 0.4)', background: 'rgba(245, 158, 11, 0.05)' } : {}}>
             <div className="stat-title"><TrendingUp size={16}/> Math Score</div>
-            <div className="stat-value">{signal?.math.score || '...'}</div>
+            <div className="stat-value">{signal?.math?.score || '...'}</div>
             <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>
-               {signal?.math.volatility || 'Scanning'} Volatility
+               {signal?.math?.volatility || 'Scanning'} Volatility
             </div>
+            {signal?.math?.pattern && signal?.math?.pattern !== "None" && (
+              <div style={{ marginTop: '8px', padding: '4px 8px', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '4px', fontSize: '0.75rem', color: '#f59e0b', fontWeight: 600, textAlign: 'center', border: '1px dashed rgba(245, 158, 11, 0.3)' }}>
+                🚨 {signal.math.pattern} Detected
+              </div>
+            )}
           </div>
           <div className="stat-card">
             <div className="stat-title"><Newspaper size={16}/> VADER Sentiment</div>
