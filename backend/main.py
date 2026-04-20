@@ -5,8 +5,13 @@ from engine.news_engine import fetch_and_score_news
 from typing import Optional
 import urllib.request
 import json
+from engine.db import init_db, log_telemetry
 
 app = FastAPI(title="Nexus Trader API")
+
+@app.on_event("startup")
+def startup_event():
+    init_db()
 
 app.add_middleware(
     CORSMiddleware,
@@ -75,8 +80,9 @@ def get_signal(ticker: str, macro: Optional[str] = None):
     else:
         conviction_signal = "HOLD"
         
-    return {
+    payload = {
         "ticker": ticker,
+        "macro": macro if macro else "",
         "math": math_data,
         "news": news_data,
         "conviction": {
@@ -84,3 +90,8 @@ def get_signal(ticker: str, macro: Optional[str] = None):
             "signal": conviction_signal
         }
     }
+    
+    # Asynchronously log to SQLite
+    log_telemetry(payload)
+    
+    return payload
