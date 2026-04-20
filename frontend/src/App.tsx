@@ -148,7 +148,7 @@ function App() {
             <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>Rule-based Engine</div>
           </div>
           <div className="stat-card">
-            <div className="stat-title"><Brain size={16}/> Gemini LLM Score</div>
+            <div className="stat-title"><Brain size={16}/> LLM Score</div>
             <div className={`stat-value ${typeof signal?.news?.ai_score === 'number' && signal?.news?.ai_score > 50 ? 'value-green' : (typeof signal?.news?.ai_score === 'number' && signal?.news?.ai_score < 50 ? 'value-red' : '')}`} style={typeof signal?.news?.ai_score === 'string' ? {fontSize: '1rem', color: '#f59e0b'} : {}}>
               {signal?.news?.ai_score || '...'}
             </div>
