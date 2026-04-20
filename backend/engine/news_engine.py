@@ -1,9 +1,6 @@
 import yfinance as yf
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 import time
-import os
-from google import genai
-from dotenv import load_dotenv
 import json
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -11,18 +8,10 @@ from urllib.parse import quote
 import email.utils
 import datetime
 
-load_dotenv()
 analyzer = SentimentIntensityAnalyzer()
 
-# Configure Gemini if API key is present
-GEMINI_KEY = os.getenv("GEMINI_API_KEY")
-if GEMINI_KEY:
-    client = genai.Client(api_key=GEMINI_KEY)
-
 def analyze_with_llm(articles_data: list):
-    """Passes headlines and publication dates to Gemini to return a score and short reasoning."""
-    if not GEMINI_KEY:
-        return {"score": "NO_API_KEY", "reasoning": ""}
+    """Passes headlines and publication dates to Local Ollama to return a score and short reasoning."""
     if not articles_data:
         return {"score": 50, "reasoning": "No news to analyze."}
         
@@ -36,16 +25,27 @@ def analyze_with_llm(articles_data: list):
         Headlines and Publication Dates:
         {json.dumps(articles_data)}
         """
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt
-        )
+        
+        url = "http://localhost:11434/api/generate"
+        payload = json.dumps({
+            "model": "llama3.1",
+            "prompt": prompt,
+            "stream": False,
+            "format": "json"
+        }).encode("utf-8")
+        
+        req = urllib.request.Request(url, data=payload, headers={'Content-Type': 'application/json'})
+        response = urllib.request.urlopen(req)
+        response_body = response.read().decode('utf-8')
+        
         # Parse JSON
-        text = response.text.strip().removeprefix("```json").removesuffix("```").strip()
+        result = json.loads(response_body)
+        text = result.get("response", "{}").strip()
         data = json.loads(text)
+        
         return {"score": data.get("score", 50), "reasoning": data.get("reasoning", "")}
     except Exception as e:
-        print(f"LLM API Error: {e}")
+        print(f"Ollama API Error: {e}")
         return {"score": "ERROR", "reasoning": str(e)}
 
 def fetch_rss_news(query_string: str) -> list:

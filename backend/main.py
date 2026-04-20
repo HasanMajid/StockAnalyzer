@@ -1,8 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from engine.math_engine import get_historical_data, analyze_technicals
-from engine.news_engine import fetch_and_score_news, client, GEMINI_KEY
+from engine.news_engine import fetch_and_score_news
 from typing import Optional
+import urllib.request
+import json
 
 app = FastAPI(title="Nexus Trader API")
 
@@ -25,14 +27,22 @@ def get_chart(ticker: str):
 
 @app.get("/api/macro-drivers/{ticker}")
 def get_macro_drivers(ticker: str):
-    if not GEMINI_KEY:
-        return {"drivers": ""}
-        
     prompt = f"Identify the top 3 macroeconomic or geopolitical drivers that currently affect the stock ticker {ticker}. Return ONLY a comma-separated list of 3 short phrases (e.g., 'WTI Crude Oil, OPEC policy, Geopolitics'). No other text or markdown."
     try:
-         resp = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
-         return {"drivers": resp.text.strip()}
+        url = "http://localhost:11434/api/generate"
+        payload = json.dumps({
+            "model": "llama3.1",
+            "prompt": prompt,
+            "stream": False
+        }).encode("utf-8")
+        
+        req = urllib.request.Request(url, data=payload, headers={'Content-Type': 'application/json'})
+        response = urllib.request.urlopen(req)
+        result = json.loads(response.read().decode('utf-8'))
+        
+        return {"drivers": result.get("response", "").strip()}
     except Exception as e:
+         print(f"Ollama Macro Error: {e}")
          return {"drivers": ""}
 
 @app.get("/api/signal/{ticker}")
