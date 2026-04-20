@@ -8,6 +8,8 @@ import json
 import urllib.request
 import xml.etree.ElementTree as ET
 from urllib.parse import quote
+import email.utils
+import datetime
 
 load_dotenv()
 analyzer = SentimentIntensityAnalyzer()
@@ -82,20 +84,24 @@ def fetch_and_score_news(ticker: str, macro: str = None):
         primary_query = f'({base_query}) (stock OR TSX OR energy) when:7d'
         
         # Dual scrape execution
-        items = fetch_rss_news(primary_query)
+        primary_items = fetch_rss_news(primary_query)
+        macro_items = []
         if macro:
             macro_query = f'({macro.replace(",", " OR ")}) when:3d'
-            items += fetch_rss_news(macro_query)
+            macro_items = fetch_rss_news(macro_query)
         
-        if not items:
+        all_items = [(i, False) for i in primary_items] + [(i, True) for i in macro_items]
+        
+        if not all_items:
             return {"articles": [], "vader_score": 50, "ai_score": 50, "aggregate_score": 50}
             
         parsed_articles = []
         total_compound = 0
+        vader_counted = 0
         ai_payload = []
         seen_titles = set()
         
-        for item in items:
+        for item, is_macro in all_items:
             title = item.find('title').text if item.find('title') is not None else ""
             if not title or title in seen_titles: continue
             
@@ -105,23 +111,38 @@ def fetch_and_score_news(ticker: str, macro: str = None):
             link = item.find('link').text if item.find('link') is not None else "#"
             pub_date = item.find('pubDate').text if item.find('pubDate') is not None else "Recent"
             
-            formatted_time = " ".join(pub_date.split(" ")[:4]) if len(pub_date.split(" ")) > 4 else pub_date
+            # Parse accurate temporal relativity
+            try:
+                dt = email.utils.parsedate_to_datetime(pub_date)
+                now = datetime.datetime.now(datetime.timezone.utc)
+                hours_ago = int((now - dt).total_seconds() / 3600)
+                if hours_ago < 24:
+                    formatted_time = f"Published {hours_ago} hours ago"
+                else:
+                    formatted_time = f"Published {hours_ago // 24} days ago"
+            except:
+                formatted_time = "Recent"
             
             ai_payload.append({
                 "headline": title,
                 "date": formatted_time
             })
             
-            sentiment_dict = analyzer.polarity_scores(title)
-            compound = sentiment_dict['compound'] 
-            total_compound += compound
+            tag = "neutral"
             
-            if compound >= 0.05:
-                tag = "bullish"
-            elif compound <= -0.05:
-                tag = "bearish"
+            # Conditionally Bypass VADER dictionary logic for Macro inputs
+            if not is_macro:
+                sentiment_dict = analyzer.polarity_scores(title)
+                compound = sentiment_dict['compound'] 
+                total_compound += compound
+                vader_counted += 1
+                
+                if compound >= 0.05:
+                    tag = "bullish"
+                elif compound <= -0.05:
+                    tag = "bearish"
             else:
-                tag = "neutral"
+                tag = "neutral" # Visually uncolored tag for purely macro items
                 
             parsed_articles.append({
                 "id": str(time.time()) + title[:5],
@@ -136,9 +157,12 @@ def fetch_and_score_news(ticker: str, macro: str = None):
             if len(parsed_articles) >= 15:
                 break
                 
-        # VADER Math
-        avg_compound = total_compound / len(parsed_articles)
-        vader_score = int(((avg_compound + 1) / 2) * 100)
+        # VADER Math Calculation (only against counted items)
+        if vader_counted > 0:
+            avg_compound = total_compound / vader_counted
+            vader_score = int(((avg_compound + 1) / 2) * 100)
+        else:
+            vader_score = 50
         
         # AI LLM Math (Now receives timestamps natively)
         ai_data = analyze_with_llm(ai_payload)
