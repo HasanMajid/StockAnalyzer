@@ -10,6 +10,7 @@ function App() {
   const [inputValue, setInputValue] = useState('CJ.TO');
   const [macroInput, setMacroInput] = useState('');
   const [activeMacro, setActiveMacro] = useState('');
+  const [tradingMode, setTradingMode] = useState<'swing' | 'day'>('swing');
 
   // Fetch Macro Drivers when Ticker changes
   useEffect(() => {
@@ -25,23 +26,24 @@ function App() {
   }, [ticker]);
 
   useEffect(() => {
-    // Clear old signal when switching tickers or macros
+    // Clear old signal when switching tickers, macros, or modes
     setSignal(null);
-    const macroParam = activeMacro ? `?macro=${encodeURIComponent(activeMacro)}` : '';
+    const queryParams = new URLSearchParams({ trading_mode: tradingMode });
+    if (activeMacro) queryParams.append('macro', activeMacro);
     
-    fetch(`http://localhost:8000/api/signal/${ticker}${macroParam}`)
+    fetch(`http://localhost:8000/api/signal/${ticker}?${queryParams.toString()}`)
       .then(res => res.json())
       .then(json => setSignal(json))
       .catch(err => console.error("Could not load signals", err));
       
     const interval = setInterval(() => {
-      fetch(`http://localhost:8000/api/signal/${ticker}${macroParam}`)
+      fetch(`http://localhost:8000/api/signal/${ticker}?${queryParams.toString()}`)
         .then(res => res.json())
         .then(json => setSignal(json));
     }, 60000);
     
     return () => clearInterval(interval);
-  }, [ticker, activeMacro]);
+  }, [ticker, activeMacro, tradingMode]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,6 +80,24 @@ function App() {
             />
             <button type="submit" style={{ display: 'none' }}>Update</button>
           </form>
+
+          <div style={{ display: 'flex', marginLeft: 'auto', gap: '8px', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 600 }}>MODE:</span>
+            <div style={{ display: 'flex', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '6px', padding: '2px', border: '1px solid rgba(148, 163, 184, 0.2)' }}>
+              <button 
+                onClick={() => setTradingMode('swing')}
+                style={{ background: tradingMode === 'swing' ? 'rgba(59, 130, 246, 0.2)' : 'transparent', color: tradingMode === 'swing' ? '#3b82f6' : '#94a3b8', border: 'none', padding: '4px 12px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
+              >
+                SWING
+              </button>
+              <button 
+                onClick={() => setTradingMode('day')}
+                style={{ background: tradingMode === 'day' ? 'rgba(245, 158, 11, 0.2)' : 'transparent', color: tradingMode === 'day' ? '#f59e0b' : '#94a3b8', border: 'none', padding: '4px 12px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
+              >
+                DAY
+              </button>
+            </div>
+          </div>
           
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', borderLeft: '1px solid var(--border-color)', paddingLeft: '20px', marginLeft: '20px' }}>
             <span style={{ fontSize: '2.25rem', fontWeight: 700, letterSpacing: '-1px', lineHeight: 1 }}>

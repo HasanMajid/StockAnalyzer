@@ -20,6 +20,7 @@ def analyze_with_llm(articles_data: list):
         You are an expert day trader evaluating the immediate short-term impact of the following breaking news headlines on the stock it refers to.
         Rate the overall sentiment from 0 (Extremely Bearish/Sell) to 100 (Extremely Bullish/Buy). 50 is Neutral.
         CRITICAL: Notice the publication date of each article. Discount the impact of old news mathematically. News older than 48 hours should carry drastically less conviction.
+        WARNING: Combating Positivity Bias. You MUST default to scoring neutral (50). Normal corporate PR releases and dividend maintaining are neutral (50). DO NOT score above 50 unless there is an imminent, highly explosive catalyst. DO NOT score below 50 unless there is a devastating breakdown.
         Respond with ONLY a valid JSON object in this exact format: {{"score": 75, "reasoning": "Brief 1-sentence explanation of why."}}
         
         Headlines and Publication Dates:

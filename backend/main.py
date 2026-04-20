@@ -51,7 +51,7 @@ def get_macro_drivers(ticker: str):
          return {"drivers": ""}
 
 @app.get("/api/signal/{ticker}")
-def get_signal(ticker: str, macro: Optional[str] = None):
+def get_signal(ticker: str, macro: Optional[str] = None, trading_mode: Optional[str] = "swing"):
     # 1. Math Data
     math_data = analyze_technicals(ticker)
     math_score = math_data["score"]
@@ -61,13 +61,20 @@ def get_signal(ticker: str, macro: Optional[str] = None):
     vader_score = news_data["vader_score"]
     ai_score = news_data["ai_score"]
     
-    # 3. Conviction Score (Depends if AI is connected)
+    # 3. Conviction Score (Depends if AI is connected and what Trading Mode is active)
     if isinstance(ai_score, int):
-        # 40% Math, 20% VADER, 40% AI
-        conviction_value = (math_score * 0.4) + (vader_score * 0.2) + (ai_score * 0.4)
+        if trading_mode == "day":
+            # Day Trading: Pure Price Action Bias (80/10/10)
+            conviction_value = (math_score * 0.8) + (vader_score * 0.1) + (ai_score * 0.1)
+        else:
+            # Swing Trading: Macro Influenced (40/20/40)
+            conviction_value = (math_score * 0.4) + (vader_score * 0.2) + (ai_score * 0.4)
     else:
-        # 60% Math, 40% VADER (fallback when AI missing)
-        conviction_value = (math_score * 0.6) + (vader_score * 0.4)
+        if trading_mode == "day":
+            # Fallback when AI missing
+            conviction_value = (math_score * 0.9) + (vader_score * 0.1)
+        else:
+            conviction_value = (math_score * 0.6) + (vader_score * 0.4)
     
     if conviction_value >= 65:
         conviction_signal = "STRONG BUY"
