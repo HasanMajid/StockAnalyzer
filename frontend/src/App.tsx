@@ -45,6 +45,15 @@ function App() {
     return () => clearInterval(interval);
   }, [ticker, activeMacro, tradingMode]);
 
+  // Dynamic Browser Tab Title
+  useEffect(() => {
+    if (signal?.math?.current_price && signal?.conviction?.signal) {
+      document.title = `[${signal.conviction.signal}] $${signal.math.current_price.toFixed(2)} - ${ticker}`;
+    } else {
+      document.title = `Scanning ${ticker}... | Nexus Trader`;
+    }
+  }, [signal, ticker]);
+  
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if(inputValue) setTicker(inputValue.toUpperCase());
