@@ -5,6 +5,10 @@ from engine.news_engine import fetch_and_score_news
 from typing import Optional
 import urllib.request
 import json
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 from engine.db import init_db, log_telemetry
 
 app = FastAPI(title="Nexus Trader API")
@@ -34,18 +38,29 @@ def get_chart(ticker: str):
 def get_macro_drivers(ticker: str):
     prompt = f"Identify the top 3 macroeconomic or geopolitical drivers that currently affect the stock ticker {ticker}. Return ONLY a comma-separated list of 3 short phrases (e.g., 'WTI Crude Oil, OPEC policy, Geopolitics'). No other text or markdown."
     try:
-        url = "http://localhost:11434/api/generate"
+        url = "https://api.groq.com/openai/v1/chat/completions"
+        api_key = os.getenv("GROQ_API_KEY", "")
+        
         payload = json.dumps({
-            "model": "llama3.1",
-            "prompt": prompt,
-            "stream": False
+            "model": "llama-3.1-8b-instant",
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.5
         }).encode("utf-8")
         
-        req = urllib.request.Request(url, data=payload, headers={'Content-Type': 'application/json'})
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {api_key}',
+            'User-Agent': 'Mozilla/5.0'
+        }
+        
+        req = urllib.request.Request(url, data=payload, headers=headers)
         response = urllib.request.urlopen(req)
         result = json.loads(response.read().decode('utf-8'))
         
-        return {"drivers": result.get("response", "").strip()}
+        # Parse Groq OpenAI format
+        content = result.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+        
+        return {"drivers": content}
     except Exception as e:
          print(f"Ollama Macro Error: {e}")
          return {"drivers": ""}

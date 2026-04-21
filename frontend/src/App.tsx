@@ -8,6 +8,7 @@ function App() {
   const urlParams = new URLSearchParams(window.location.search);
   const initialTicker = urlParams.get('ticker')?.toUpperCase() || 'CJ.TO';
   const initialMode = (urlParams.get('mode') as 'swing' | 'day') || 'day';
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
   const [signal, setSignal] = useState<any>(null);
   const [ticker, setTicker] = useState(initialTicker);
@@ -26,7 +27,7 @@ function App() {
 
   // Fetch Macro Drivers when Ticker changes
   useEffect(() => {
-    fetch(`http://localhost:8000/api/macro-drivers/${ticker}`)
+    fetch(`${API_BASE_URL}/api/macro-drivers/${ticker}`)
       .then(res => res.json())
       .then(json => {
          if(json.drivers) {
@@ -43,13 +44,13 @@ function App() {
     const queryParams = new URLSearchParams({ trading_mode: tradingMode });
     if (activeMacro) queryParams.append('macro', activeMacro);
     
-    fetch(`http://localhost:8000/api/signal/${ticker}?${queryParams.toString()}`)
+    fetch(`${API_BASE_URL}/api/signal/${ticker}?${queryParams.toString()}`)
       .then(res => res.json())
       .then(json => setSignal(json))
       .catch(err => console.error("Could not load signals", err));
       
     const interval = setInterval(() => {
-      fetch(`http://localhost:8000/api/signal/${ticker}?${queryParams.toString()}`)
+      fetch(`${API_BASE_URL}/api/signal/${ticker}?${queryParams.toString()}`)
         .then(res => res.json())
         .then(json => setSignal(json));
     }, 60000);

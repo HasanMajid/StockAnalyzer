@@ -6,12 +6,13 @@ export default function Chart({ ticker }: { ticker: string }) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
   useEffect(() => {
     setLoading(true);
     
     const fetchChartData = () => {
-      fetch(`http://localhost:8000/api/chart/${ticker}`)
+      fetch(`${API_BASE_URL}/api/chart/${ticker}`)
         .then(res => res.json())
         .then(json => {
           if (json.data && json.data.length > 0) {

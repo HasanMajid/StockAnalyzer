@@ -7,7 +7,10 @@ import xml.etree.ElementTree as ET
 from urllib.parse import quote
 import email.utils
 import datetime
+import os
+from dotenv import load_dotenv
 
+load_dotenv()
 analyzer = SentimentIntensityAnalyzer()
 
 def analyze_with_llm(articles_data: list):
@@ -27,21 +30,29 @@ def analyze_with_llm(articles_data: list):
         {json.dumps(articles_data)}
         """
         
-        url = "http://localhost:11434/api/generate"
+        url = "https://api.groq.com/openai/v1/chat/completions"
+        api_key = os.getenv("GROQ_API_KEY", "")
+        
         payload = json.dumps({
-            "model": "llama3.1",
-            "prompt": prompt,
-            "stream": False,
-            "format": "json"
+            "model": "llama-3.1-8b-instant",
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.5,
+            "response_format": {"type": "json_object"}
         }).encode("utf-8")
         
-        req = urllib.request.Request(url, data=payload, headers={'Content-Type': 'application/json'})
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {api_key}',
+            'User-Agent': 'Mozilla/5.0'
+        }
+        
+        req = urllib.request.Request(url, data=payload, headers=headers)
         response = urllib.request.urlopen(req)
         response_body = response.read().decode('utf-8')
         
         # Parse JSON
         result = json.loads(response_body)
-        text = result.get("response", "{}").strip()
+        text = result.get("choices", [{}])[0].get("message", {}).get("content", "{}").strip()
         data = json.loads(text)
         
         return {"score": data.get("score", 50), "reasoning": data.get("reasoning", "")}
