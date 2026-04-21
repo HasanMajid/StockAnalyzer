@@ -1,4 +1,4 @@
-import { Target, TrendingUp, Activity, Newspaper, Brain } from 'lucide-react';
+import { Target, TrendingUp, Newspaper, Brain } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import './index.css';
 import Chart from './components/Chart';
