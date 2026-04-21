@@ -164,7 +164,7 @@ function App() {
           <div className="stat-card">
             <div className="stat-title"><Newspaper size={16}/> VADER Sentiment</div>
             <div className={`stat-value ${signal?.news?.vader_score > 50 ? 'value-green' : (signal?.news?.vader_score < 50 ? 'value-red' : '')}`}>
-              {signal?.news.vader_score || '50'}
+              {signal?.news?.vader_score || '50'}
             </div>
             <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>Rule-based Engine</div>
           </div>
