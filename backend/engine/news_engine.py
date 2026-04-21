@@ -82,7 +82,7 @@ def fetch_and_score_news(ticker: str, macro: str = None):
         if company_name:
              base_query += f' OR "{company_name}"'
              
-        primary_query = f'({base_query}) (stock OR TSX OR energy) when:7d'
+        primary_query = f'({base_query}) (stock OR market OR financial OR trading) when:7d'
         
         # Dual scrape execution
         primary_items = fetch_rss_news(primary_query)

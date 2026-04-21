@@ -5,12 +5,24 @@ import Chart from './components/Chart';
 import NewsPanel from './components/NewsPanel';
 
 function App() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialTicker = urlParams.get('ticker')?.toUpperCase() || 'CJ.TO';
+  const initialMode = (urlParams.get('mode') as 'swing' | 'day') || 'day';
+
   const [signal, setSignal] = useState<any>(null);
-  const [ticker, setTicker] = useState('CJ.TO');
-  const [inputValue, setInputValue] = useState('CJ.TO');
+  const [ticker, setTicker] = useState(initialTicker);
+  const [inputValue, setInputValue] = useState(initialTicker);
   const [macroInput, setMacroInput] = useState('');
   const [activeMacro, setActiveMacro] = useState('');
-  const [tradingMode, setTradingMode] = useState<'swing' | 'day'>('day');
+  const [tradingMode, setTradingMode] = useState<'swing' | 'day'>(initialMode);
+
+  // Sync URL with State
+  useEffect(() => {
+    const currentParams = new URLSearchParams(window.location.search);
+    currentParams.set('ticker', ticker);
+    currentParams.set('mode', tradingMode);
+    window.history.replaceState({}, '', `${window.location.pathname}?${currentParams.toString()}`);
+  }, [ticker, tradingMode]);
 
   // Fetch Macro Drivers when Ticker changes
   useEffect(() => {
@@ -56,8 +68,16 @@ function App() {
   
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if(inputValue) setTicker(inputValue.toUpperCase());
-    setActiveMacro(macroInput);
+    if (inputValue) {
+       // Only execute if it's actually a new ticker
+       if (inputValue.toUpperCase() !== ticker) {
+           setActiveMacro(''); // Blank it out so we don't fetch with old macros
+           setTicker(inputValue.toUpperCase());
+       } else {
+           // If they are just manually updating the macro field for the same ticker
+           setActiveMacro(macroInput);
+       }
+    }
   };
 
   return (
